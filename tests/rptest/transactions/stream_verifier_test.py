@@ -72,12 +72,11 @@ class StreamVerifierTest(RedpandaTest):
         remote_script_path = inject_remote_script(node, "topic_operations.py")
         cmd = f"python3 {remote_script_path} "
         cmd += f"--brokers '{brokers}' "
-        cmd += f"--batch-size '32' "
+        cmd += "--batch-size '32' "
         cmd += "create "
         cmd += f"--topic-prefix '{topic_name_prefix}' "
         cmd += f"--topic-count {topic_count} "
         cmd += "--kafka-batching "
-        #cmd += f"--topic-name-length {topic_name_length} "
         cmd += f"--partitions {num_partitions} "
         cmd += f"--replicas {num_replicas} "
         cmd += "--skip-randomize-names"
@@ -148,6 +147,7 @@ class StreamVerifierTest(RedpandaTest):
         # and check if new messages appeared
         verifier.update_service_config({
             "consume_stop_criteria": "sleep",
+            "consume_sleep_time_s": 30,
             "worker_threads": 1,
             "msg_per_txn": 1
         })
@@ -177,7 +177,7 @@ class StreamVerifierTest(RedpandaTest):
         verifier.remote_wait_action('atomic')
         atomic_status = verifier.remote_stop_atomic()
         self.logger.info(
-            f"Consume action finished:\n{json.dumps(atomic_status, indent=2)}")
+            f"Atomic action finished:\n{json.dumps(atomic_status, indent=2)}")
 
         # Consume
         verifier.remote_start_consume(self.target_topic_prefix,
@@ -193,9 +193,13 @@ class StreamVerifierTest(RedpandaTest):
         consumed_count = consume_status['stats']['processed_messages']
 
         assert produced_count == atomic_count, \
-            "Produced/Atomic message count mismatch"
+            "Produced/Atomic message count mismatch: " \
+            f"{produced_count}/{atomic_count}"
 
         assert atomic_count == consumed_count, \
-            "Atomic/Consumed message count mismatch"
+            "Atomic/Consumed message count mismatch: " \
+            f"{atomic_count}/{consumed_count}"
 
-        # TODO: Message content validation
+        errors = "\n".join(consume_status['errors'])
+        assert len(consume_status['errors']) < 1, \
+            f"Consume action has validation errors:\n{errors}"

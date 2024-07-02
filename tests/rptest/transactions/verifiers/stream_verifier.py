@@ -69,9 +69,15 @@ class StreamVerifier(Service):
                 f"'{action}' is unknown. "
                 f"Available actions are {', '.join(available_actions)}")
         try:
-            status = self.get_produce_status()
-            # TODO: Check that no active command is running
-
+            r = self.get_produce_status()
+            if r['status'][action] == 'READY':
+                # Check that no active command is running
+                return True
+            else:
+                self.logger.debug(f"Requested action of '{action}' is not "
+                                  "ready. Current statuses are "
+                                  f"'{r['status']}' ")
+                return False
             return True
         except requests.exceptions.ConnectionError:
             return False
@@ -107,9 +113,8 @@ class StreamVerifier(Service):
         initial_message_count = self.get_processed_count(action)
         self.logger.info(
             f"[{action}] initial messages count is {initial_message_count}")
-        self.logger.info(
-            f"[{action}] Waiting for {initial_message_count + delta} message count"
-        )
+        self.logger.info(f"[{action}] Waiting for "
+                         f"{initial_message_count + delta} message count")
         wait_until(lambda: self.get_processed_count(action) >
                    initial_message_count + delta,
                    timeout_sec=timeout_sec,
@@ -183,7 +188,7 @@ class StreamVerifier(Service):
             if raise_on_fails:
                 self._raise_on_non_success(r)
             return r.json()
-        except (requests.ConnectionError, requests.ConnectTimeout) as e:
+        except (requests.ConnectionError, requests.ConnectTimeout):
             self.logger.debug(
                 f"{self.service_id} failed to connect to {title} using {url}")
             return {}
@@ -196,8 +201,8 @@ class StreamVerifier(Service):
             return r.json()
         except (requests.ConnectionError, requests.ConnectTimeout) as e:
             self.logger.warning(
-                f"{self.service_id} failed to connect to {title} using {url}: {e}"
-            )
+                f"{self.service_id} failed to connect to {title} using {url}: "
+                f"{e}")
             return {}
 
     def _delete(self, url: str) -> dict:
@@ -208,8 +213,8 @@ class StreamVerifier(Service):
             return r.json()
         except (requests.ConnectionError, requests.ConnectTimeout) as e:
             self.logger.warning(
-                f"{self.service_id} failed to connect to {title} using {url}: {e}"
-            )
+                f"{self.service_id} failed to connect to {title} using {url}: "
+                f"{e}")
             return {}
 
     def get_service_config(self):
