@@ -1808,7 +1808,7 @@ class RedpandaServiceCloud(KubeServiceMixin, RedpandaServiceABC):
 
         return [
             p for p in pods['items']
-            if is_redpanda_pod(p, self.cluster_id, provider)
+            if is_redpanda_pod(p, self.cluster_id)
         ]
 
     @property
