@@ -28,7 +28,8 @@ def is_redpanda_pod(pod_obj: dict[str, Any], cluster_id: str) -> bool:
     # - That reuses the SAME generateName (bad!)
     try:
         if pod_obj['metadata']['generateName'] == 'redpanda-broker-':
-            if pod_obj['metadata']["labels"]["app.kubernetes.io/component"] == "redpanda-statefulset":
+            if pod_obj['metadata']["labels"][
+                    "app.kubernetes.io/component"] == "redpanda-statefulset":
                 return True
     except KeyError:
         pass

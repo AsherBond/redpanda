@@ -1807,8 +1807,7 @@ class RedpandaServiceCloud(KubeServiceMixin, RedpandaServiceABC):
         provider = self._cloud_cluster.config.provider
 
         return [
-            p for p in pods['items']
-            if is_redpanda_pod(p, self.cluster_id)
+            p for p in pods['items'] if is_redpanda_pod(p, self.cluster_id)
         ]
 
     @property

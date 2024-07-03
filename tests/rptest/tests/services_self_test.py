@@ -377,7 +377,8 @@ class KubectlLocalOnlyTest(Test):
                     "metadata": {
                         "generateName": "redpanda-broker-",
                         "labels": {
-                            "app.kubernetes.io/component": "redpanda-statefulset"
+                            "app.kubernetes.io/component":
+                            "redpanda-statefulset"
                         }
                     }
                 },
@@ -388,7 +389,8 @@ class KubectlLocalOnlyTest(Test):
                     "metadata": {
                         "generateName": "redpanda-broker-configuration-",
                         "labels": {
-                            "app.kubernetes.io/component": "redpanda-statefulset"
+                            "app.kubernetes.io/component":
+                            "redpanda-statefulset"
                         }
                     }
                 },
@@ -399,7 +401,8 @@ class KubectlLocalOnlyTest(Test):
                     "metadata": {
                         "generateName": "redpanda-broker-configuration-",
                         "labels": {
-                            "app.kubernetes.io/component": "redpanda-post-install"
+                            "app.kubernetes.io/component":
+                            "redpanda-post-install"
                         }
                     },
                 },
