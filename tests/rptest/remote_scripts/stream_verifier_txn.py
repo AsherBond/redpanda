@@ -467,25 +467,17 @@ class MessageGenerators:
 class StreamVerifier():
     """Main class to process messages
     """
-    def __init__(self,
-                 brokers,
-                 workload_config: dict,
-                 worker_threads: int,
-                 rate=0,
-                 total_messages=100):
+    def __init__(self, brokers, workload_config: dict, worker_threads: int):
         # Create core logger
         self.logger = setup_logger(LOGGER_CORE)
         # Remove quotes from broker config value if an
         self.brokers = brokers.strip('\"').strip("'")
         # Create main topics config
         self.workload_config = WorkloadConfig(**workload_config)
-        self.message_rate_limit = rate
-        # It is reasonable to assume that single message will not be sent
-        # faster than 1 ms in case of no rate limitations
-        self.msgs_rate_ms = 1000 / self.message_rate_limit if rate > 0 else 0
         # total messages to process in all topics
-        self.total_messages = total_messages
+        self.total_messages = app_config.msg_total
         self.workers = worker_threads
+        self.message_rate = app_config.msg_rate_limit
         # Announcement of dynamic vars
         self.topics = {}
         self._topic_id_template = datetime.strftime(datetime.now(),
@@ -496,6 +488,12 @@ class StreamVerifier():
         self.atomic_thread = None
         self.delivery_reports = {}
         self.consumer_count = 0
+
+    @property
+    def msgs_rate_ms(self):
+        # It is reasonable to assume that single message will not be sent
+        # faster than 1 ms in case of no rate limitations
+        return 1000 / self.message_rate if self.message_rate > 0 else 0
 
     @property
     def topic_id(self):
@@ -1269,7 +1267,7 @@ class StreamVerifier():
         # topics configuration to use in POST command
         topics_cfg = vars(self.workload_config)
         topics_cfg.update({
-            "msg_rate_limit": self.message_rate_limit,
+            "msg_rate_limit": app_config.msg_rate_limit,
             "msg_total": self.total_messages
         })
         response['workload_config'] = topics_cfg
@@ -1331,11 +1329,7 @@ class StreamVerifierWeb(StreamVerifier):
     def __init__(self, cfg):
         self.cfg = cfg
         self.wlogger = setup_logger(LOGGER_WEB_PRODUCE)
-        super().__init__(cfg.brokers,
-                         cfg.workload_config,
-                         cfg.worker_threads,
-                         rate=cfg.msg_rate_limit,
-                         total_messages=cfg.msg_total)
+        super().__init__(cfg.brokers, cfg.workload_config, cfg.worker_threads)
 
     def on_get(self, req: falcon.Request, resp: falcon.Response):
         """Handles GET requests"""
@@ -1643,11 +1637,8 @@ commands = [COMMAND_PRODUCE, COMMAND_ATOMIC, COMMAND_CONSUME]
 def process_command(command, cfg, ioclass):
     try:
         logger = setup_logger(LOGGER_CLI_COMMAND)
-        verifier = StreamVerifier(cfg.brokers,
-                                  cfg.workload_config,
-                                  cfg.worker_threads,
-                                  rate=cfg.msg_rate_limit,
-                                  total_messages=cfg.msg_total)
+        verifier = StreamVerifier(cfg.brokers, cfg.workload_config,
+                                  cfg.worker_threads)
         if command == COMMAND_PRODUCE:
             logger.info("Init Produce command")
             verifier.init_producers()
